@@ -21,8 +21,29 @@
 
 #include "generic_hash_table.h"
 
+inline unsigned int HT_hash_function_string(const void* const key, const size_t key_size){
+    size_t i;
+    unsigned int hash_value = 5381;        // Some magic prime number (see its binary representation)
+    for(i=0; i < key_size; ++i){
+        hash_value = ((hash_value << 5) + hash_value) + (unsigned int) ((const char*) key)[i];     // hash * 33 + one_char
+    }
+    return hash_value;
+}
+
+inline HT_hash_table* HT_new_hash_string(const unsigned int size){
+    return HT_new_hash(size, HT_hash_function_string);
+}
+
+inline int HT_init_string(HT_hash_table* ht, const unsigned int size){
+    return HT_init(ht, size, HT_hash_function_string);
+}
+
 int HT_get_element_string(const HT_hash_table* ht, const char* key, char** value);
 
 int HT_add_element_string(HT_hash_table* ht, const char* key, const char* value);
+
+inline int HT_delete_string(HT_hash_table* ht){
+    return HT_delete(ht);
+}
 
 #endif // ( HT__BASE_HASH_TABLE_H )

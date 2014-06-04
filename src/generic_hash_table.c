@@ -114,17 +114,17 @@ static HT_pair* HT_key_already_exists(const HT_slot* const slot, const void* con
     return NULL;
 }
 
-HT_hash_table* HT_new_hash(const unsigned int size){
+HT_hash_table* HT_new_hash(const unsigned int size, unsigned int (*hash_function)(const void* const key, const size_t key_size)){
     HT_hash_table* htable;
     int retval;
-    if( size == 0 ){
+    if( size == 0 || hash_function == NULL ){
         errno = EINVAL;
         return NULL;
     }
     htable = malloc(sizeof(HT_hash_table));
     if( htable == NULL )
         return NULL;
-    retval = HT_init(htable, size);
+    retval = HT_init(htable, size, hash_function);
     if( retval != 0 ){
         int errno_temp = errno;
         free( htable );
@@ -134,8 +134,8 @@ HT_hash_table* HT_new_hash(const unsigned int size){
     return htable;
 }
 
-int HT_init(HT_hash_table* const ht, const unsigned int size){
-    if( ht == NULL || size == 0 ){
+int HT_init(HT_hash_table* const ht, const unsigned int size, unsigned int (*hash_function)(const void* const key, const size_t key_size)){
+    if( ht == NULL || size == 0 || hash_function == NULL ){
         errno = EINVAL;
         return 1;
     }
@@ -144,6 +144,7 @@ int HT_init(HT_hash_table* const ht, const unsigned int size){
         return 1;
     ht->_nb_slots = size;
     memset(ht->_slots, 0, size * sizeof(HT_slot));
+    HT_hash_function = hash_function;
     return 0;
 }
 

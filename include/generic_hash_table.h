@@ -69,7 +69,7 @@ typedef struct{
  * \retval NULL On failure and errno is set appropriately.
  * \warning Do not use HT_init after this or you will probably have memory leaks.
  */
-HT_hash_table* HT_new_hash(const unsigned int size);
+HT_hash_table* HT_new_hash(const unsigned int size, unsigned int (*hash_function)(const void* const key, const size_t key_size));
 
 /**
  * \brief Use this to initialise an static defined hash table.
@@ -79,7 +79,7 @@ HT_hash_table* HT_new_hash(const unsigned int size);
  * \retval 0 On success.
  * \retval 1 On failure and errno is set appropriately.
  */
-int HT_init(HT_hash_table* ht, const unsigned int size);
+int HT_init(HT_hash_table* ht, const unsigned int size, unsigned int (*hash_function)(const void* const key, const size_t key_size));
 
 /**
  * \brief Search for an element in the hash table.
