@@ -42,8 +42,8 @@ int HT_get_element_string(const HT_hash_table* ht, const char* key, char** value
 
 int HT_add_element_string(HT_hash_table* ht, const char* key, const char* value);
 
-static inline int HT_delete_string(HT_hash_table* ht){
-    return HT_delete(ht);
+static inline void HT_delete_string(HT_hash_table* ht){
+    HT_delete(ht);
 }
 
 #endif // ( HT__BASE_HASH_TABLE_H )
