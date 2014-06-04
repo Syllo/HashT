@@ -34,7 +34,6 @@ static unsigned int (*HT_hash_function)(const void* const key, const size_t key_
 
 /**
  * \brief Add a value into a container.
- * \see HT_container
  * \param container A pointer to an already allocated container where to copy the buffer.
  * \param buf A pointer to the buffer to copy into the container.
  * \param buff_size The size of the buffer in bytes.
@@ -62,7 +61,6 @@ static inline int HT_add_to_container(HT_container* const container, const void*
 
 /**
  * \brief Destroys the content of a container and set it's size to zero.
- * \see HT_container
  * \param container A pointer to a container.
  */
 static inline void HT_destroy_container_content(HT_container* container){
@@ -74,7 +72,6 @@ static inline void HT_destroy_container_content(HT_container* container){
 
 /**
  * \brief Delete the content of a slot.
- * \see HT_slot
  * \param slot A pointer to the slot to reset.
  */
 static inline void HT_destroy_slot_content(HT_slot* slot){
@@ -91,8 +88,6 @@ static inline void HT_destroy_slot_content(HT_slot* slot){
 
 /**
  * \brief Return the slot corresponding to the hash function applied to key.
- * \see HT_slot
- * \see HT_hash_table
  * \param ht A pointer to the hash table.
  * \param key A pointer to the key to process.
  * \param key_size The size of the key in bytes.
@@ -114,8 +109,7 @@ static inline HT_slot* HT_get_slot_from_key(const HT_hash_table* const ht, const
 
 /**
  * \brief Test if a key is already in the slot from the hash table.
- * \relatesalso HT_get_slot_from_key
- * \see HT_slot
+ * \see HT_get_slot_from_key
  * \param slot A pointer to the slot which should contain the key. See ::HT_get_slot_from_key.
  * \param key A pointer to the key to match with the ones present in the slot.
  * \param key_size The size of the key in bytes.
@@ -194,7 +188,6 @@ int HT_get_element(const HT_hash_table* const ht, const void* const key, const s
 
 /**
  * \brief Double the size of the slot.
- * \see HT_slot
  * \param slot A pointer to the slot to initialize.
  * \retval 0 On success.
  * \retval 1 On failure and errno is set appropriately.
@@ -210,7 +203,6 @@ static inline int HT_double_slot_size(HT_slot* slot){
 
 /**
  * \brief Initializes the slot with an initial size.
- * \see HT_slot
  * \param slot A pointer to the slot to initialize.
  * \retval 0 On success.
  * \retval 1 On failure and errno is set appropriately.

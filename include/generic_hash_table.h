@@ -75,12 +75,11 @@ typedef struct{
 
 /**
  * \brief Create a new hash table already initialized with size number of keys.
- * \see HT_hash_table
- * \relatesalso HT_delete_pointer
+ * \see HT_delete_pointer
  * \param size The number of keys present in the hash table.
  * \param hash_function A pointer to a function to use for hashing the key values.
- * \pre ::size must be a strictly positive number(::size > 0).
- * \pre ::hash_function should not be NULL.
+ * \pre size must be a strictly positive number(size > 0).
+ * \pre hash_function should not be NULL.
  * \return A pointer to an already initialized hash table;
  * \retval NULL On failure and errno is set appropriately.
  * \warning Do not use ::HT_init after this or you will ensure memory leaks.
@@ -89,13 +88,12 @@ HT_hash_table* HT_new_hash(const unsigned int size, unsigned int (*hash_function
 
 /**
  * \brief Use this to initialise an static defined hash table.
- * \see HT_hash_table
- * \relatesalso HT_delete
+ * \see HT_delete
  * \param ht A pointer to the hash table to initialise.
  * \param hash_function A pointer to a function to use for hashing the key values.
  * \param size The number of keys present in the hash table. "size" must be a positive non zero number (size > 0).
- * \pre ::ht and ::hash_function must not be NULL.
- * \pre ::size must be an strictly positive number (::size > 0).
+ * \pre ht and hash_function must not be NULL.
+ * \pre size must be an strictly positive number (size > 0).
  * \retval 0 On success.
  * \retval 1 On failure and errno is set appropriately.
  */
@@ -103,30 +101,29 @@ int HT_init(HT_hash_table* ht, const unsigned int size, unsigned int (*hash_func
 
 /**
  * \brief Search for an element in the hash table.
- * \see HT_hash_table
  * \param ht A pointer to the hash table.
  * \param key A pointer to the key to search in the table.
  * \param key_size The size of the key in bytes.
  * \param value The value holding the corresponding value if the key is found.
- * \pre ::ht and :: key must not be NULL.
- * \pre ::key_size must be an strictly positive number (::key_size > 0).
- * \retval 0 On success and ::value is set to point to the corresponding value.
+ * \param value_size A pointer to a variable that will be set to value size in bytes if a match is found.
+ * \pre ht and key must not be NULL.
+ * \pre key_size must be an strictly positive number (key_size > 0).
+ * \retval 0 On success and value is set to point to the corresponding value.
  * \retval 1 If the key is not found.
  * \retval 2 On failure and errno is set appropriately.
- * \warning ::value will point directly to the hash table value.
+ * \warning value will point directly to the hash table value.
  */
 int HT_get_element(const HT_hash_table* ht, const void* key, const size_t key_size, void** value, size_t* value_size);
 
 /**
  * \brief Add an element to the hash table.
- * \see HT_hash_table
  * \param ht A pointer to the hash table.
  * \param key A pointer to the key for the hash.
  * \param key_size The size of the key in bytes.
  * \param value A pointer to the value corresponding with the key.
  * \param value_size The size of the value in bytes.
- * \pre ::ht, ::key and ::value must not be NULL.
- * \pre ::key_size and ::value_size must be strictly positive numbers (::key_size > 0).
+ * \pre ht, key and value must not be NULL.
+ * \pre key_size and value_size must be strictly positive numbers (key_size > 0).
  * \retval 0 On success.
  * \retval 1 If the key is already present in the hash table.
  * \retval 2 On error and errno is set appropriately.
@@ -135,27 +132,25 @@ int HT_add_element(HT_hash_table* ht, const void* key, const size_t key_size, co
 
 /**
  * \brief Deletes the hash table created with ::HT_new_hash.
- * \see HT_hash_table
- * \relatesalso HT_new_hash
+ * \see HT_new_hash
  * \param ht The hash table to delete.
- * \pre :ht must not be NULL.
+ * \pre ht must not be NULL.
  */
 void HT_delete_pointer(HT_hash_table* ht);
 
 /**
  * \brief Delete a hash table initialized with ::HT_init.
- * \relatesalso HT_init
+ * \see HT_init
  * \param ht The hash table.
- * \pre ::ht must not be NULL.
+ * \pre ht must not be NULL.
  */
 void HT_delete(HT_hash_table* ht);
 
 /**
  * \brief Reset the content of the hash table without the need of creating a new one.
- * \see HT_hash_table
  * \param ht A pointer to the hash table.
- * \pre ::ht must not be NULL.
- * \post ::ht is still usable.
+ * \pre ht must not be NULL.
+ * \post ht is still usable.
  */
 void HT_reset_table(HT_hash_table* ht);
 
