@@ -239,6 +239,9 @@ int HT_add_element(HT_hash_table* const ht, const void* const key, const size_t 
             return 2;
     }
 
+    if( HT_key_already_exists(slot, key, key_size) != NULL )
+        return 1;
+
     pair = &slot->_pairs[slot->_nb_pairs];
     retval = HT_add_to_container(&pair->_key, key, key_size);
     if( retval == 0 )
