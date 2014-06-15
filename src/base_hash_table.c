@@ -21,6 +21,10 @@
 int HT_get_element_string(const HT_hash_table* ht, const char* key, char** value){
     size_t size_key,
            size_value;
+    if( key == NULL ){
+        errno = EINVAL;
+        return 2;
+    }
     size_key = strlen(key); // The key don't contain the '\0' delimiter
     return HT_get_element(ht, key, size_key, (void*) value, &size_value);
 }
@@ -28,6 +32,10 @@ int HT_get_element_string(const HT_hash_table* ht, const char* key, char** value
 int HT_add_element_string(HT_hash_table* ht, const char* key, const char* value){
     size_t size_key,
            size_value;
+    if( key == NULL || value == NULL ){
+        errno = EINVAL;
+        return 2;
+    }
     size_key = strlen(key);         // The key don't contain the '\0' delimiter
     size_value = strlen(value) + 1; // The value is stored with the '\0' delimiter
     return HT_add_element(ht, key, size_key, value, size_value);

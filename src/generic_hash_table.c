@@ -181,8 +181,10 @@ int HT_get_element(const HT_hash_table* const ht, const void* const key, const s
     pair = HT_key_already_exists(slot, key, key_size);
     if( pair == NULL )
         return 1;
-    *value = pair->_value._buffer;
-    *value_size = pair->_value._size_buffer;
+    if( value != NULL ){
+        *value = pair->_value._buffer;
+        *value_size = pair->_value._size_buffer;
+    }
     return 0;
 }
 

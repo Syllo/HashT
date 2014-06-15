@@ -91,7 +91,7 @@ HT_hash_table* HT_new_hash(const unsigned int size, unsigned int (*hash_function
  * \see HT_delete
  * \param ht A pointer to the hash table to initialise.
  * \param hash_function A pointer to a function to use for hashing the key values.
- * \param size The number of keys present in the hash table. "size" must be a positive non zero number (size > 0).
+ * \param size The number of keys present in the hash table.
  * \pre ht and hash_function must not be NULL.
  * \pre size must be an strictly positive number (size > 0).
  * \retval 0 On success.
@@ -108,10 +108,11 @@ int HT_init(HT_hash_table* ht, const unsigned int size, unsigned int (*hash_func
  * \param value_size A pointer to a variable that will be set to value size in bytes if a match is found.
  * \pre ht and key must not be NULL.
  * \pre key_size must be an strictly positive number (key_size > 0).
- * \retval 0 On success and value is set to point to the corresponding value.
+ * \retval 0 On success and if not NULL value is set to point to the corresponding value.
  * \retval 1 If the key is not found.
  * \retval 2 On failure and errno is set appropriately.
  * \warning value will point directly to the hash table value.
+ * \note If value is NULL this function acts like a membership test.
  */
 int HT_get_element(const HT_hash_table* ht, const void* key, const size_t key_size, void** value, size_t* value_size);
 
