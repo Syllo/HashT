@@ -6,7 +6,7 @@ INCLUDE_PATH = include/
 DOC_PATH = doc/
 
 DEBUG_FLAGS = -g
-WARNING_FLAGS = -Wall -Wextra -Wfloat-equal -Wdouble-promotion -Wswitch-default -Winit-self -Wshadow -Wbad-function-cast -Wcast-qual -Wcast-align -Wconversion -Wlogical-op -Wstrict-prototypes -Wnested-externs
+WARNING_FLAGS = -Wall -Wextra -Wfloat-equal -Wswitch-default -Winit-self -Wshadow -Wbad-function-cast -Wcast-qual -Wcast-align -Wconversion -Wlogical-op -Wstrict-prototypes -Wnested-externs
 COMPILE_FLAGS = $(WARNING_FLAGS) # $(DEBUG_FLAGS)
 
 vpath %.c  $(SOURCE_PATH)
