@@ -28,11 +28,6 @@
 #include "generic_hash_table.h"
 
 /**
- * \brief The hash function used to hash the key value.
- */
-static unsigned int (*HT_hash_function)(const void* const key, const size_t key_size) = NULL;
-
-/**
  * \brief Add a value into a container.
  * \param container A pointer to an already allocated container where to copy the buffer.
  * \param buf A pointer to the buffer to copy into the container.
@@ -63,26 +58,35 @@ static inline int HT_add_to_container(HT_container* const container, const void*
  * \brief Destroys the content of a container and set it's size to zero.
  * \param container A pointer to a container.
  */
-static inline void HT_destroy_container_content(HT_container* container){
+static inline void HT_destroy_container(HT_container* container){
     if( container->_size_buffer != 0){
         free(container->_buffer);
         container->_size_buffer = 0;
     }
 }
 
+
+static inline void HT_destroy_pair(HT_pair* p){
+    HT_destroy_container(&p->_key);
+    HT_destroy_container(&p->_value);
+    free(p);
+}
 /**
  * \brief Delete the content of a slot.
  * \param slot A pointer to the slot to reset.
  */
 static inline void HT_destroy_slot_content(HT_slot* slot){
-    unsigned int i;
-    if( slot->_size_pairs != 0 ){
-        for(i=0; i < slot->_nb_pairs; ++i){
-            HT_destroy_container_content(&slot->_pairs[i]._key);
-            HT_destroy_container_content(&slot->_pairs[i]._value);
+    if(slot->_first_pair != NULL){
+        HT_pair *next,
+                *current;
+        current = slot->_first_pair;
+
+        do{
+            next = current->_next;
+            HT_destroy_pair(current);
+            current = next;
         }
-        free(slot->_pairs);
-        slot->_size_pairs = 0;
+        while(current != NULL);
     }
 }
 
@@ -102,36 +106,9 @@ static inline HT_slot* HT_get_slot_from_key(const HT_hash_table* const ht, const
 #endif
     unsigned int key_val;
     HT_slot *slot;
-    key_val = HT_hash_function(key, key_size);
+    key_val = ht->hash_function(key, key_size);
     slot = &ht->_slots[key_val % ht->_nb_slots];
     return slot;
-}
-
-/**
- * \brief Test if a key is already in the slot from the hash table.
- * \see HT_get_slot_from_key
- * \param slot A pointer to the slot which should contain the key. See ::HT_get_slot_from_key.
- * \param key A pointer to the key to match with the ones present in the slot.
- * \param key_size The size of the key in bytes.
- * \return A pointer to the pair containing the key.
- * \retval NULL If the key is not found.
- */
-static HT_pair* HT_key_already_exists(const HT_slot* const slot, const void* const key, const size_t key_size){
-    unsigned int i;
-    HT_pair *pair;
-#ifdef HT__DEBUG
-    if( slot == NULL || key == NULL ){
-        fprintf(stderr, "Null pointer inside of HT_key_already_exists\n");
-        exit(1);
-    }
-#endif
-    for(i=0; i < slot->_nb_pairs; ++i){
-        pair = &slot->_pairs[i];
-        if(pair->_key._size_buffer == key_size && strncmp(pair->_key._buffer, key, key_size) == 0){ // The key is the same
-            return pair;
-        }
-    }
-    return NULL;
 }
 
 HT_hash_table* HT_new_hash(const unsigned int size, unsigned int (*hash_function)(const void* const key, const size_t key_size)){
@@ -164,11 +141,11 @@ int HT_init(HT_hash_table* const ht, const unsigned int size, unsigned int (*has
         return 1;
     ht->_nb_slots = size;
     memset(ht->_slots, 0, size * sizeof(HT_slot));
-    HT_hash_function = hash_function;
+    ht->hash_function = hash_function;
     return 0;
 }
 
-int HT_get_element(const HT_hash_table* const ht, const void* const key, const size_t key_size, void** const value, size_t* const value_size){
+int HT_get_element_position(const HT_hash_table* ht, const void* key, const size_t key_size, void** value, size_t* value_size, unsigned int position, int reverse){
     HT_slot *slot;
     HT_pair *pair;
     if( ht == NULL || key == NULL || key_size == 0 ){
@@ -178,6 +155,8 @@ int HT_get_element(const HT_hash_table* const ht, const void* const key, const s
     slot = HT_get_slot_from_key(ht, key, key_size);
     if( slot == NULL )
         return 1;
+    if(reverse){
+        pair = HT_get_pair(slot, key, key_size, n
     pair = HT_key_already_exists(slot, key, key_size);
     if( pair == NULL )
         return 1;
@@ -271,4 +250,12 @@ void HT_reset_table(HT_hash_table* ht){
         for(i=0; i < ht->_nb_slots; ++i)
             HT_destroy_slot_content(&ht->_slots[i]);
     }
+}
+
+int HT_remove_position(HT_hash_table* ht, const void* key, const size_t key_size, unsigned int position, int reverse){
+    return 1;
+}
+
+int HT_append_position(HT_hash_table* ht, const void* key, const size_t key_size, const void* value, const size_t value_size, unsigned int position, int reverse){
+    HT_slot s = HT_get_slot_from_key(ht, key, key_size);
 }

@@ -51,18 +51,19 @@ typedef struct{
 /**
  * \brief A definition of a pair containing the key and its associated value.
  */
-typedef struct{
-    HT_container _key,         /**<- The key. */
-                 _value;       /**<- The value associated. */
+typedef struct HT_pair{
+    HT_container _key,          /**<- The key. */
+                 _value;        /**<- The value associated. */
+    struct HT_pair *_next,      /**<- The next pair */
+                   *_previous;  /**<- The previous pair */
 } HT_pair;
 
 /**
  * \brief A definition made to handle the collisions cases.
  */
 typedef struct{
-    HT_pair *_pairs;            /**<- An array of elements with the same hash. */
-    unsigned int _nb_pairs,     /**<- The numbers of elements in the array. */
-                 _size_pairs;   /**<- The total size of the actual array. */
+    HT_pair *_first_pair,            /**<- The first pair */
+            *_last_pair;
 } HT_slot;
 
 /**
@@ -71,6 +72,7 @@ typedef struct{
 typedef struct{
     HT_slot *_slots;            /**<- The slots used for the hash function. */
     unsigned int _nb_slots;     /**<- The number of slots used for the hash table. */
+    unsigned int (*hash_function)(const void* const key, const size_t key_size); /**<- the hesh function. */
 }   HT_hash_table;
 
 /**
@@ -106,6 +108,8 @@ int HT_init(HT_hash_table* ht, const unsigned int size, unsigned int (*hash_func
  * \param key_size The size of the key in bytes.
  * \param value The value holding the corresponding value if the key is found.
  * \param value_size A pointer to a variable that will be set to value size in bytes if a match is found.
+ * \param position The number of match before returning the value.
+ * \param reverse 0 to search from begin to end and any other integer otherwise.
  * \pre ht and key must not be NULL.
  * \pre key_size must be an strictly positive number (key_size > 0).
  * \retval 0 On success and if not NULL value is set to point to the corresponding value.
@@ -114,7 +118,43 @@ int HT_init(HT_hash_table* ht, const unsigned int size, unsigned int (*hash_func
  * \warning value will point directly to the hash table value.
  * \note If value is NULL this function acts like a membership test.
  */
-int HT_get_element(const HT_hash_table* ht, const void* key, const size_t key_size, void** value, size_t* value_size);
+int HT_get_element_position(const HT_hash_table* ht, const void* key, const size_t key_size, void** value, size_t* value_size, unsigned int position, int reverse);
+
+/**
+ * \brief Search for an element in the hash table.
+ * \param ht A pointer to the hash table.
+ * \param key A pointer to the key to search in the table.
+ * \param key_size The size of the key in bytes.
+ * \param value The value holding the corresponding value if the key is found.
+ * \param value_size A pointer to a variable that will be set to value size in bytes if a match is found.
+ * \pre ht and key must not be NULL.
+ * \pre key_size must be an strictly positive number (key_size > 0).
+ * \retval 0 On success and if not NULL value is set to point to the corresponding value.
+ * \retval 1 If the key is not found.
+ * \retval 2 On failure and errno is set appropriately.
+ * \warning value will point directly to the hash table value.
+ * \note If value is NULL this function acts like a membership test.
+ */
+inline int HT_get_element(const HT_hash_table* ht, const void* key, const size_t key_size, void** value, size_t* value_size){
+    return HT_get_element_position(ht, key, key_size, value, value_size, 0, 0);
+}
+
+/**
+ * \brief Add an element to the hash table.
+ * \param ht A pointer to the hash table.
+ * \param key A pointer to the key for the hash.
+ * \param key_size The size of the key in bytes.
+ * \param value A pointer to the value corresponding with the key.
+ * \param value_size The size of the value in bytes.
+ * \param position The number of match before returning the value.
+ * \param reverse 0 to search from begin to end and any other integer otherwise.
+ * \pre ht, key and value must not be NULL.
+ * \pre key_size and value_size must be strictly positive numbers (key_size > 0).
+ * \retval 0 On success.
+ * \retval 1 If the key is already present in the hash table.
+ * \retval 2 On error and errno is set appropriately.
+ */
+int HT_add_element_position(HT_hash_table* ht, const void* key, const size_t key_size, const void* value, const size_t value_size, unsigned int position, int reverse);
 
 /**
  * \brief Add an element to the hash table.
@@ -129,7 +169,13 @@ int HT_get_element(const HT_hash_table* ht, const void* key, const size_t key_si
  * \retval 1 If the key is already present in the hash table.
  * \retval 2 On error and errno is set appropriately.
  */
-int HT_add_element(HT_hash_table* ht, const void* key, const size_t key_size, const void* value, const size_t value_size);
+inline int HT_add_element(HT_hash_table* ht, const void* key, const size_t key_size, const void* value, const size_t value_size){
+    int retval = HT_get_element_position(ht, key, key_size, NULL, NULL, 0, 0);
+    if(retval == 1)
+        return HT_add_element_position(ht, key, key_size, value, value_size, 0, 0);
+    else
+        return 1;
+}
 
 /**
  * \brief Deletes the hash table created with ::HT_new_hash.
