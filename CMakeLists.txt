@@ -17,6 +17,9 @@ else()
     set(DEBUG OFF)
 endif()
 
+set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib)
+file(MAKE_DIRECTORY ${LIBRARY_OUTPUT_PATH})
+
 include_directories(include/)
 
 add_library(hasht STATIC
