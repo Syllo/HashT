@@ -36,16 +36,18 @@
  * \retval 1 On failure and errno is set appropriately.
  */
 static inline int HT_add_to_container(HT_container* const container, const void* const buf, const size_t buff_size){
+
+#ifdef HT__DEBUG    // Since this is internal to the API, error like this is not likely to happened.
     if( buff_size == 0 ){
         errno = EINVAL;
         return 1;
     }
-#ifdef HT__DEBUG    // Since this is internal to the API, error like this is not likely to happened.
     if( container == NULL || buf == NULL ){
         fprintf(stderr, "Null pointer inside of HT_get_slot_from_key\n");
         exit(1);
     }
 #endif
+
     container->_buffer = malloc(buff_size);
     if( container->_buffer == NULL )
         return 1;
@@ -65,12 +67,16 @@ static inline void HT_destroy_container(HT_container* container){
     }
 }
 
-
+/**
+ * \brief Destroy a pair
+ * \param p The pair to destroy.
+ */
 static inline void HT_destroy_pair(HT_pair* p){
     HT_destroy_container(&p->_key);
     HT_destroy_container(&p->_value);
     free(p);
 }
+
 /**
  * \brief Delete the content of a slot.
  * \param slot A pointer to the slot to reset.
@@ -145,6 +151,78 @@ int HT_init(HT_hash_table* const ht, const unsigned int size, unsigned int (*has
     return 0;
 }
 
+/**
+ * \brief Function to get the next pair
+ * \param pair The pair to get the next from
+ */
+static inline HT_pair *ht_next(HT_pair* pair){
+    return pair->_next;
+}
+
+/**
+ * \brief Function to get the previous pair
+ * \param pair The pair to get the previous from
+ */
+static inline HT_pair *ht_previous(HT_pair* pair){
+    return pair->_previous;
+}
+
+/**
+ * \brief Test if a pair has the same key value than the given one
+ * \param pair The pair to test
+ * \param key The key to test
+ * \param key_size The size of key
+ */
+static inline int has_same_key(const HT_pair* pair, const void *key, const size_t key_size){
+    int retval;
+    if(pair->_key._size_buffer == key_size){
+        retval = strncmp((const char*) key, (const char*) pair->_key._buffer, key_size);
+    }
+    else{
+        retval = 1;
+    }
+    return !retval; // strncmp return 0 on match
+}
+
+/**
+ * \brief Get the pair matching the key that is the position th one in the list.
+ * \param slot The slot to search inside
+ * \param key The key
+ * \param key_size The size of the key
+ * \param position The position wanted
+ * \param reverse Search first from end or start
+ */
+static HT_pair * HT_get_pair(const HT_slot *slot, const void *key, const size_t key_size, unsigned int position, int reverse){
+    HT_pair* (*next_one)(HT_pair* pair) = NULL;
+    HT_pair* first = NULL;
+    HT_pair* last_found = NULL;
+    int found = 0;
+
+    if(reverse){
+        next_one = ht_previous;
+        first = slot->_last_pair;
+    }
+    else{
+        next_one = ht_next;
+        first = slot->_first_pair;
+    }
+
+    while(first != NULL && !found){
+        if(has_same_key(first, key, key_size)){
+            last_found = first;
+            if(position == 0){
+                found = 1;
+            }
+            else{
+                --position;
+            }
+        }
+        first = next_one(first);
+    }
+
+    return last_found;
+}
+
 int HT_get_element_position(const HT_hash_table* ht, const void* key, const size_t key_size, void** value, size_t* value_size, unsigned int position, int reverse){
     HT_slot *slot;
     HT_pair *pair;
@@ -153,14 +231,10 @@ int HT_get_element_position(const HT_hash_table* ht, const void* key, const size
         return 2;
     }
     slot = HT_get_slot_from_key(ht, key, key_size);
-    if( slot == NULL )
-        return 1;
-    if(reverse){
-        pair = HT_get_pair(slot, key, key_size, n
-    pair = HT_key_already_exists(slot, key, key_size);
+    pair = HT_get_pair(slot, key, key_size, position, reverse);
     if( pair == NULL )
         return 1;
-    if( value != NULL ){
+    if( value != NULL && value_size != NULL){
         *value = pair->_value._buffer;
         *value_size = pair->_value._size_buffer;
     }
@@ -168,39 +242,68 @@ int HT_get_element_position(const HT_hash_table* ht, const void* key, const size
 }
 
 /**
- * \brief Double the size of the slot.
- * \param slot A pointer to the slot to initialize.
- * \retval 0 On success.
- * \retval 1 On failure and errno is set appropriately.
+ * \brief Add the pair in after or before where
+ * \param pair_to_ad The pair to add
+ * \param where The chosen one NULL if the first element
+ * \param previous Add previous if true and after if false
  */
-static inline int HT_double_slot_size(HT_slot* slot){
-    slot->_pairs = realloc(slot->_pairs, slot->_size_pairs * 2 * sizeof(HT_pair));
-    if( slot->_pairs == NULL )
-        return 1;
-    memset(slot->_pairs + slot->_size_pairs, 0, slot->_size_pairs * sizeof(HT_pair));
-    slot->_size_pairs *= 2;
-    return 0;
+static void add_pair_in_pair_chain(HT_pair* pair_to_add, HT_pair* where, int previous){
+    if(where == NULL){
+        pair_to_add ->_next = NULL;
+        pair_to_add ->_previous = NULL;
+    }
+    else{
+        if(previous){
+            pair_to_add->_next = where;
+            pair_to_add->_previous = where->_previous;
+            if(where->_previous != NULL)
+                where->_previous->_next = pair_to_add;
+            where->_previous = pair_to_add;
+        }
+        else{
+            pair_to_add->_previous = where;
+            pair_to_add->_next = where->_next;
+            if(where->_next != NULL)
+                where->_next->_previous = pair_to_add;
+            where->_next = pair_to_add;
+        }
+    }
 }
 
 /**
- * \brief Initializes the slot with an initial size.
- * \param slot A pointer to the slot to initialize.
- * \retval 0 On success.
- * \retval 1 On failure and errno is set appropriately.
+ * \brief Remove the pair
+ * \param pair The pair to remove from the chain
  */
-static inline int HT_init_slot(HT_slot* slot){
-    slot->_pairs = malloc( HT_INITIAL_SLOT_SIZE * sizeof(HT_pair) );
-    if( slot->_pairs == NULL )
-        return 1;
-    memset(slot->_pairs, 0, HT_INITIAL_SLOT_SIZE * sizeof(HT_pair));
-    slot->_size_pairs = HT_INITIAL_SLOT_SIZE;
-    return 0;
+static void remove_pair_in_pair_chain(HT_pair* pair){
+    if(pair != NULL){
+        if(pair->_previous != NULL)
+            pair->_previous->_next = pair->_next;
+        if(pair->_next != NULL)
+            pair->_next->_previous = pair->_previous;
+        HT_destroy_pair(pair);
+    }
 }
 
-int HT_add_element(HT_hash_table* const ht, const void* const key, const size_t key_size, const void* const value, const size_t value_size){
-    int retval;
+/** \brief Creates a pair
+ * \param key The key to add to the pair
+ * \param key_size The size of the key
+ * \param value The value to add to the pair
+ * \param value_size The size of the value
+ */
+static inline HT_pair* new_pair(const void* const key, const size_t key_size, const void* const value, const size_t value_size){
+    HT_pair* new_one = malloc(sizeof(HT_pair));
+    if(new_one == NULL)
+        return new_one;
+    HT_add_to_container(&new_one->_key, key, key_size);
+    HT_add_to_container(&new_one->_value, value, value_size);
+    new_one->_next = NULL;
+    new_one->_previous = NULL;
+    return new_one;
+}
+
+int HT_add_element_position(HT_hash_table* const ht, const void* const key, const size_t key_size, const void* const value, const size_t value_size, unsigned int position, int reverse){
     HT_slot *slot;
-    HT_pair *pair;
+    HT_pair *where;
     if( ht == NULL || key == NULL || value == NULL || key_size == 0 || value_size == 0){
         errno = EINVAL;
         return 2;
@@ -208,28 +311,26 @@ int HT_add_element(HT_hash_table* const ht, const void* const key, const size_t 
 
     slot = HT_get_slot_from_key(ht, key, key_size);
 
-    if( slot->_size_pairs == 0 ){ // The first time the slot is used
-        retval = HT_init_slot( slot );
-        if( retval != 0 )
-            return 2;
+    HT_pair* new_one = new_pair(key, key_size, value, value_size);
+
+    if(position != 0){ // search for the pair if asked
+        where = HT_get_pair(slot, key, key_size, position, reverse);
+        add_pair_in_pair_chain(new_one, where, reverse);
+    }
+    else{ // otherwise add in first or last
+        if(reverse)
+            where = slot->_last_pair;
+        else
+            where = slot->_first_pair;
+        add_pair_in_pair_chain(new_one, where, !reverse);
     }
 
-    if( slot->_nb_pairs == slot->_size_pairs ){ // The slot is full ... what about double the buffer size.
-        retval = HT_double_slot_size( slot );
-        if( retval != 0 )
-            return 2;
-    }
+    if(new_one->_previous == NULL)
+        slot->_first_pair = new_one;
+    if(new_one->_next == NULL)
+        slot->_last_pair = new_one;
 
-    if( HT_key_already_exists(slot, key, key_size) != NULL )
-        return 1;
-
-    pair = &slot->_pairs[slot->_nb_pairs];
-    retval = HT_add_to_container(&pair->_key, key, key_size);
-    if( retval == 0 )
-        retval = HT_add_to_container(&pair->_value, value, value_size);
-    slot->_nb_pairs += 1;
-
-    return retval;
+    return 0;
 }
 
 void HT_delete_pointer(HT_hash_table* ht){
@@ -252,10 +353,26 @@ void HT_reset_table(HT_hash_table* ht){
     }
 }
 
-int HT_remove_position(HT_hash_table* ht, const void* key, const size_t key_size, unsigned int position, int reverse){
-    return 1;
-}
+int HT_remove_element_position(HT_hash_table* ht, const void* key, const size_t key_size, unsigned int position, int reverse){
+    HT_slot *slot;
+    HT_pair *where;
+    if( ht == NULL || key == NULL || key_size == 0 ){
+        errno = EINVAL;
+        return 2;
+    }
 
-int HT_append_position(HT_hash_table* ht, const void* key, const size_t key_size, const void* value, const size_t value_size, unsigned int position, int reverse){
-    HT_slot s = HT_get_slot_from_key(ht, key, key_size);
+    slot = HT_get_slot_from_key(ht, key, key_size);
+    where = HT_get_pair(slot, key, key_size, position, reverse);
+
+    if( where == NULL )
+        return 1;
+
+    if(where == slot->_first_pair)
+        slot->_first_pair = where->_next;
+    if(where == slot->_last_pair)
+        slot->_last_pair = where->_previous;
+
+    remove_pair_in_pair_chain(where);
+
+    return 0;
 }

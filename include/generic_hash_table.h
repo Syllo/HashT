@@ -151,7 +151,6 @@ inline int HT_get_element(const HT_hash_table* ht, const void* key, const size_t
  * \pre ht, key and value must not be NULL.
  * \pre key_size and value_size must be strictly positive numbers (key_size > 0).
  * \retval 0 On success.
- * \retval 1 If the key is already present in the hash table.
  * \retval 2 On error and errno is set appropriately.
  */
 int HT_add_element_position(HT_hash_table* ht, const void* key, const size_t key_size, const void* value, const size_t value_size, unsigned int position, int reverse);
@@ -200,5 +199,20 @@ void HT_delete(HT_hash_table* ht);
  * \post ht is still usable.
  */
 void HT_reset_table(HT_hash_table* ht);
+
+/**
+ * \brief Remove the element in the same way that the HT_add_element_position
+ * works
+ * \param ht A pointer to the hash table.
+ * \param key A pointer to the key for the hash.
+ * \param key_size The size of the key in bytes.
+ * \param position The number of match before returning the value.
+ * \param reverse 0 to search from begin to end and any other integer otherwise.
+ * \pre ht, key and value must not be NULL.
+ * \pre key_size and value_size must be strictly positive numbers (key_size > 0).
+ * \retval 0 On success.
+ * \retval 2 On error and errno is set appropriately.
+ */
+int HT_remove_element_position(HT_hash_table* ht, const void* key, const size_t key_size, unsigned int position, int reverse);
 
 #endif // ( __HASH_TABLE_H )
